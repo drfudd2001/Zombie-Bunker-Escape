@@ -1,0 +1,140 @@
+/* Global layout / base styles */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background: #050608;
+    color: #e5e5e5;
+    font-family: Consolas, "Fira Code", monospace;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    height: 100vh;
+}
+
+/* Main container */
+#game-container {
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Title */
+#game-container h1 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-size: 22px;
+    letter-spacing: 1px;
+    color: #f5f5f5;
+}
+
+/* Output area */
+#output {
+    flex: 1;
+    background: radial-gradient(circle at top left, #181b20 0, #050608 55%);
+    border: 1px solid #333;
+    padding: 12px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    line-height: 1.4;
+    font-size: 14px;
+    box-shadow: 0 0 16px rgba(0, 0, 0, 0.7);
+}
+
+/* Input row */
+#input-row {
+    display: flex;
+    margin-top: 8px;
+    gap: 8px;
+}
+
+/* Command box */
+#command {
+    flex: 1;
+    padding: 8px;
+    background: #15181d;
+    border: 1px solid #444;
+    color: #e5e5e5;
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+}
+
+#command:focus {
+    border-color: #2b8a3e;
+    box-shadow: 0 0 4px rgba(43, 138, 62, 0.7);
+}
+
+/* Submit button */
+#submit-btn {
+    padding: 8px 16px;
+    background: #2b8a3e;
+    border: none;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.05s ease;
+}
+
+#submit-btn:hover:not(:disabled) {
+    background: #36a148;
+    transform: translateY(-1px);
+}
+
+#submit-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+#submit-btn:disabled {
+    background: #555;
+    cursor: default;
+}
+
+/* Hint / helper text */
+#hint {
+    font-size: 12px;
+    color: #888;
+    margin-top: 4px;
+}
+
+/* Scrollbar tweaks for output */
+#output::-webkit-scrollbar {
+    width: 8px;
+}
+
+#output::-webkit-scrollbar-track {
+    background: #050608;
+}
+
+#output::-webkit-scrollbar-thumb {
+    background: #333;
+}
+
+#output::-webkit-scrollbar-thumb:hover {
+    background: #444;
+}
+
+/* Small screens */
+@media (max-width: 600px) {
+    #game-container {
+        padding: 8px;
+    }
+
+    #game-container h1 {
+        font-size: 18px;
+    }
+
+    #output {
+        font-size: 13px;
+    }
+
+    #command,
+    #submit-btn {
+        font-size: 13px;
+    }
+}

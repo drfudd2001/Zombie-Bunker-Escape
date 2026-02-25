@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Zombie Bunker Escape</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div id="game-container">
+    <h1>Zombie Bunker Escape</h1>
+    <div id="output"></div>
+    <div id="input-row">
+        <label for="command"><input id="command" type="text" autocomplete="off"
+                                            placeholder="Type a command (e.g., 'go North', 'get Med Kit', 'go North and get Shotgun')"></label>
+      <button id="submit-btn">Send</button>
+    </div>
+    <div id="hint">Commands: go North/South/East/West · get &lt;item&gt; · chain with "and".</div>
+  </div>
+
+  <script>
+    const output = document.getElementById('output');
+    const commandInput = document.getElementById('command');
+    const submitBtn = document.getElementById('submit-btn');
+
+    let sessionId = crypto.randomUUID();
+
+    function printToOutput(text) {
+      output.textContent += text;
+      output.scrollTop = output.scrollHeight;
+    }
+
+    async function startGame() {
+      const res = await fetch('/api/game/start', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+      const data = await res.json();
+      sessionId = data.session_id;
+      printToOutput(data.output);
+    }
+
+    async function sendCommand(cmd) {
+      const res = await fetch('/api/game', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ command: cmd, session_id: sessionId }),
+      });
+      const data = await res.json();
+      sessionId = data.session_id;
+      return data.output;
+    }
+
+    async function handleSubmit() {
+      const cmd = commandInput.value.trim();
+      if (!cmd) return;
+      printToOutput("> " + cmd + "\n");
+      commandInput.value = "";
+      submitBtn.disabled = true;
+
+      try {
+        const gameText = await sendCommand(cmd);
+        printToOutput(gameText);
+      } catch (err) {
+        printToOutput("[Error talking to the game backend]\n");
+        console.error(err);
+      } finally {
+        submitBtn.disabled = false;
+        commandInput.focus();
+      }
+    }
+
+    submitBtn.addEventListener('click', handleSubmit);
+    commandInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') handleSubmit();
+    });
+
+    // fire the intro
+    startGame();
+  </script>
+</body>
+</html>

@@ -1,3 +1,5 @@
+# ZombieBunkerEscape.py
+
 def show_instructions():
     print("===== ZOMBIE BUNKER ESCAPE =====")
     print("Rotting hands scrape at the steel above as the city dies overhead.")
@@ -85,34 +87,39 @@ def build_world():
     return rooms
 
 
-def show_status(current_room_name, inventory, rooms):
+def render_status(current_room_name, inventory, rooms):
+    """Return the status text as a string instead of printing."""
+    lines = []
     current_room = rooms[current_room_name]
-    print(f"\nYou are in the {current_room['name']}")
-    print(f"Inventory: {inventory}")
+    lines.append(f"\nYou are in the {current_room['name']}")
+    lines.append(f"Inventory: {inventory}")
 
     room_item = current_room.get("item")
     if room_item is not None:
         if room_item in inventory:
-            print(f"Empty racks and scattered debris remind you that the {room_item} is already yours.")
+            lines.append(f"Empty racks and scattered debris remind you that the {room_item} is already yours.")
         else:
-            print(f"The dim emergency lights flicker over a {room_item} within reach.")
+            lines.append(f"The dim emergency lights flicker over a {room_item} within reach.")
     else:
-        print("Dust hangs in the stale air. There are no items in this room.")
+        lines.append("Dust hangs in the stale air. There are no items in this room.")
 
     exits = []
     for direction, dest in current_room["exits"].items():
         exits.append(f"{direction} to {dest}")
     if exits:
-        print("From here you can go: " + ", ".join(exits))
+        lines.append("From here you can go: " + ", ".join(exits))
 
-    print("-" * 40)
+    lines.append("-" * 40)
+    return "\n".join(lines) + "\n"
 
 
 def handle_go(argument, current_room_name, rooms, inventory):
     direction = argument.strip().title()
     if not direction:
-        print("Your nerves fray as you hesitate. That isn't a valid direction (use North, South, East, or West).")
-        return current_room_name
+        return (
+            "Your nerves fray as you hesitate. That isn't a valid direction (use North, South, East, or West).\n",
+            current_room_name,
+        )
 
     current_room = rooms[current_room_name]
     exits = current_room["exits"]
@@ -124,45 +131,50 @@ def handle_go(argument, current_room_name, rooms, inventory):
         # Require Key Card to enter Control Room from Observation Post
         if current_room_name == "Observation Post" and next_room_name == "Control Room":
             if "Key Card" not in inventory:
-                print("The blast door to the Control Room stays locked. You swipe your empty hand over the panel.")
-                print("Without the Key Card, the override rejects you with a harsh buzz.")
-                return current_room_name
+                text = (
+                    "The blast door to the Control Room stays locked. You swipe your empty hand over the panel.\n"
+                    "Without the Key Card, the override rejects you with a harsh buzz.\n"
+                )
+                return text, current_room_name
 
-        print(f"You push {direction} to the {next_room['name']}.")
-        return next_room_name
+        text = f"You push {direction} to the {next_room['name']}.\n"
+        return text, next_room_name
     else:
-        print("Your path is blocked in that direction. Try another way before the dead find you.")
-        return current_room_name
+        return (
+            "Your path is blocked in that direction. Try another way before the dead find you.\n",
+            current_room_name,
+        )
 
 
 def handle_get(argument, current_room_name, rooms, inventory):
     requested_item = argument.strip()
     if not requested_item:
-        print("Your hands grasp at empty air. Specify which item to get.")
-        return
+        return "Your hands grasp at empty air. Specify which item to get.\n"
 
     current_room = rooms[current_room_name]
     room_item = current_room.get("item")
 
     if room_item is None:
-        print("You search the shadows, but there is nothing here you can use.")
-        return
+        return "You search the shadows, but there is nothing here you can use.\n"
 
     if requested_item.lower() == room_item.lower() and room_item not in inventory:
         inventory.append(room_item)
-        print(f"You snatch up the {room_item}, feeling a little less helpless.")
-        print(f"Inventory now: {inventory}")
         current_room["item"] = None
+        return (
+            f"You snatch up the {room_item}, feeling a little less helpless.\n"
+            f"Inventory now: {inventory}\n"
+        )
     else:
-        print("You fumble around, but that item isn't here. The bunker seems to mock you.")
+        return "You fumble around, but that item isn't here. The bunker seems to mock you.\n"
 
 
 def check_game_over(current_room_name, inventory):
+    """Return (is_over: bool, text: str)."""
     if current_room_name != "Control Room":
-        return False
+        return False, ""
 
-    print("\nYou push into the Control Room. The stench of decay hits first.")
-    print("The Alpha Zombie towers over the consoles, a knot of muscle, bone, and ruined armor.")
+    lines = ["\nYou push into the Control Room. The stench of decay hits first.",
+             "The Alpha Zombie towers over the consoles, a knot of muscle, bone, and ruined armor."]
 
     has_hazmat = "Hazmat Suit" in inventory
     has_ammo = "Ammo" in inventory
@@ -171,75 +183,129 @@ def check_game_over(current_room_name, inventory):
     has_fuse = "Generator Fuse" in inventory
 
     if not has_hazmat:
-        print("\nThe air is thick with glowing spores and rancid vapor. Without your Hazmat Suit,")
-        print("every breath is poison. Your skin blisters as the Alpha lurches toward you.")
-        print("You choke, cough, and collapse in the contaminated Control Room. GAME OVER.")
-        return True
-    else:
-        print("\nYour Hazmat Suit hisses as filters strain, sealing you off from the worst of the fallout.")
+        lines.append("\nThe air is thick with glowing spores and rancid vapor. Without your Hazmat Suit,")
+        lines.append("every breath is poison. Your skin blisters as the Alpha lurches toward you.")
+        lines.append("You choke, cough, and collapse in the contaminated Control Room. GAME OVER.")
+        return True, "\n".join(lines) + "\n"
+
+    lines.append("\nYour Hazmat Suit hisses as filters strain, sealing you off from the worst of the fallout.")
 
     if not has_shotgun and not has_ammo:
-        print("\nYou rush in with nothing but your bare hands.")
-        print("The Alpha doesn't hesitate. Claws and teeth tear through you before you can react.")
-        print("The bunker falls silent. GAME OVER.")
-        return True
+        lines.append("\nYou rush in with nothing but your bare hands.")
+        lines.append("The Alpha doesn't hesitate. Claws and teeth tear through you before you can react.")
+        lines.append("The bunker falls silent. GAME OVER.")
+        return True, "\n".join(lines) + "\n"
 
     if not has_shotgun and has_ammo:
-        print("\nLoose rounds rattle in your pocket, useless without a weapon to load.")
-        print("The Alpha watches you fumble, then crosses the distance in one brutal charge.")
-        print("The bunker claims you. GAME OVER.")
-        return True
+        lines.append("\nLoose rounds rattle in your pocket, useless without a weapon to load.")
+        lines.append("The Alpha watches you fumble, then crosses the distance in one brutal charge.")
+        lines.append("The bunker claims you. GAME OVER.")
+        return True, "\n".join(lines) + "\n"
 
     if has_shotgun and not has_ammo:
-        print("\nYou raise the shotgun, but the chamber clicks empty. No ammo. No second chances.")
-        print("The Alpha surges forward, filling your world with claws and teeth.")
-        print("You bleed out on the Control Room floor. GAME OVER.")
-        return True
+        lines.append("\nYou raise the shotgun, but the chamber clicks empty. No ammo. No second chances.")
+        lines.append("The Alpha surges forward, filling your world with claws and teeth.")
+        lines.append("You bleed out on the Control Room floor. GAME OVER.")
+        return True, "\n".join(lines) + "\n"
 
-    print("\nYou slam shells into the shotgun, chamber a round, and unleash a deafening blast.")
-    print("Chunks of rotting flesh and armor explode across the room as the Alpha roars and staggers.")
-    print("The recoil slams through your shoulder as the Alpha crashes into you, claws raking across your armor.")
+    lines.append("\nYou slam shells into the shotgun, chamber a round, and unleash a deafening blast.")
+    lines.append("Chunks of rotting flesh and armor explode across the room as the Alpha roars and staggers.")
+    lines.append("The recoil slams through your shoulder as the Alpha crashes into you, claws raking across your armor.")
 
     if not has_medkit:
-        print("\nPain blooms white-hot through your body where the Alpha tore into you.")
-        print("Without a Med Kit, your injuries and trauma win.")
-        print("You collapse beside the Alpha's corpse. You stopped the monster, but you die with it.")
-        print("The bunker remains sealed, a tomb for you and the dead. GAME OVER.")
-        return True
+        lines.append("\nPain blooms white-hot through your body where the Alpha tore into you.")
+        lines.append("Without a Med Kit, your injuries and trauma win.")
+        lines.append("You collapse beside the Alpha's corpse. You stopped the monster, but you die with it.")
+        lines.append("The bunker remains sealed, a tomb for you and the dead. GAME OVER.")
+        return True, "\n".join(lines) + "\n"
     else:
-        print("\nBlood soaks through your gear where the Alpha's claws ripped into you.")
-        print("You tear open the Med Kit, flooding your system with painkillers and antitoxins.")
-        print("Your vision clears just enough to stay conscious as alarms blare around you.")
+        lines.append("\nBlood soaks through your gear where the Alpha's claws ripped into you.")
+        lines.append("You tear open the Med Kit, flooding your system with painkillers and antitoxins.")
+        lines.append("Your vision clears just enough to stay conscious as alarms blare around you.")
 
     if not has_fuse:
-        print("\nThe console is a shattered mess, power flickering in and out.")
-        print("Without the Generator Fuse, you cannot fully restore control to the bunker.")
-        print("You have killed the Alpha and patched yourself up, but the doors stay locked.")
-        print("You survive a little longer, but the bunker becomes your grave.")
-        print("Bittersweet victory: the monster dies, but so do you. GAME OVER.")
-        return True
+        lines.append("\nThe console is a shattered mess, power flickering in and out.")
+        lines.append("Without the Generator Fuse, you cannot fully restore control to the bunker.")
+        lines.append("You have killed the Alpha and patched yourself up, but the doors stay locked.")
+        lines.append("You survive a little longer, but the bunker becomes your grave.")
+        lines.append("Bittersweet victory: the monster dies, but so do you. GAME OVER.")
+        return True, "\n".join(lines) + "\n"
 
-    print("\nSparks dance across the ruined console. You rip open a panel and jam the Generator Fuse into place.")
-    print("Systems reboot with a deep, shuddering hum. Locks cycle open throughout the bunker.")
-    print("The Key Card in your hand unlocks the final security overrides.")
-    print("You override the last door and climb toward the ruined city above. You escaped. You win!")
-    print("Thanks for playing. The bunker will carry the scars of your escape.")
-    return True
+    lines.append("\nSparks dance across the ruined console. You rip open a panel and jam the Generator Fuse into place.")
+    lines.append("Systems reboot with a deep, shuddering hum. Locks cycle open throughout the bunker.")
+    lines.append("The Key Card in your hand unlocks the final security overrides.")
+    lines.append("You override the last door and climb toward the ruined city above. You escaped. You win!")
+    lines.append("Thanks for playing. The bunker will carry the scars of your escape.")
+    return True, "\n".join(lines) + "\n"
+
+
+class ZombieBunkerEscapeGame:
+    def __init__(self):
+        self.rooms = build_world()
+        self.current_room_name = "Central Hub"
+        self.inventory = []
+        self.started = False
+
+    def start(self) -> str:
+        self.rooms = build_world()
+        self.current_room_name = "Central Hub"
+        self.inventory = []
+        self.started = True
+
+        intro_lines = ["===== ZOMBIE BUNKER ESCAPE =====",
+                       "Rotting hands scrape at the steel above as the city dies overhead.",
+                       "You are sealed in an underground bunker, stalked by the Alpha Zombie.",
+                       "Collect 6 survival items before entering the Control Room,",
+                       "or the Alpha Zombie will tear through your defenses and end you.", "",
+                       "Move commands: go North, go South, go East, go West", "Get items: get <item name>",
+                       "You may enter two commands separated by 'and'", "  (e.g., 'go North and get Shotgun').",
+                       "-" * 40]
+
+        text = "\n".join(intro_lines) + "\n"
+        text += render_status(self.current_room_name, self.inventory, self.rooms)
+        return text
+
+    def process_command(self, raw_input: str) -> str:
+        if not self.started:
+            return self.start()
+
+        output_parts = []
+
+        # Allow up to two commands separated by "and"
+        raw_commands = [c.strip() for c in raw_input.split("and") if c.strip()]
+
+        for cmd_str in raw_commands:
+            parts = cmd_str.split(" ", 1)
+            command = parts[0].lower()
+            argument = parts[1].strip() if len(parts) > 1 else ""
+
+            if command == "go":
+                text, self.current_room_name = handle_go(
+                    argument, self.current_room_name, self.rooms, self.inventory
+                )
+                output_parts.append(text)
+            elif command == "get":
+                text = handle_get(argument, self.current_room_name, self.rooms, self.inventory)
+                output_parts.append(text)
+            else:
+                output_parts.append(
+                    "That command makes no sense in the dark. Use 'go <direction>' or 'get <item>'.\n"
+                )
+
+            over, end_text = check_game_over(self.current_room_name, self.inventory)
+            if over:
+                output_parts.append(end_text)
+                return "".join(output_parts)
+
+        # After handling commands, show updated status
+        output_parts.append(render_status(self.current_room_name, self.inventory, self.rooms))
+        return "".join(output_parts)
 
 
 def main():
-    rooms = build_world()
-    current_room_name = "Central Hub"
-    inventory = []
-
-    show_instructions()
-
+    game = ZombieBunkerEscapeGame()
+    print(game.start(), end="")
     while True:
-        show_status(current_room_name, inventory, rooms)
-
-        if check_game_over(current_room_name, inventory):
-            break
-
         user_input = input(
             "Enter your move (e.g., 'go North', 'get Med Kit', or 'go North and get Shotgun'): "
         ).strip()
@@ -248,25 +314,12 @@ def main():
             print("Your voice echoes in the bunker. Use 'go <direction>' or 'get <item>'.")
             continue
 
-        # Allow up to two commands separated by "and"
-        raw_commands = [c.strip() for c in user_input.split("and") if c.strip()]
-
-        for cmd_str in raw_commands:
-            parts = cmd_str.split(" ", 1)
-            command = parts[0].lower()
-            argument = parts[1].strip() if len(parts) > 1 else ""
-
-            if command == "go":
-                current_room_name = handle_go(argument, current_room_name, rooms, inventory)
-            elif command == "get":
-                handle_get(argument, current_room_name, rooms, inventory)
-            else:
-                print("That command makes no sense in the dark. Use 'go <direction>' or 'get <item>'.")
-
-            if check_game_over(current_room_name, inventory):
-                return
+        output = game.process_command(user_input)
+        print(output, end="")
+        # process_command already checks game over and prints ending text, so we can detect it:
+        if "GAME OVER." in output or "You escaped. You win!" in output:
+            break
 
 
 if __name__ == "__main__":
-
     main()
