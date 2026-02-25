@@ -1,176 +1,179 @@
-# Zombie Bunker Escape (Text-Based)
-
-Zombie Bunker Escape is a Python text-based survival-horror adventure set in an underground research facility overrun by zombies.  
-You explore interconnected rooms, manage a small inventory, use keycards and codes to unlock critical areas, interact with terminals, and try to reach safety before the bunker becomes your tomb.
-
-This project is designed both as a playable experience and as an example of structured, modular Python game architecture.
+Here’s the README updated to explicitly use the MIT License.
 
 ***
 
-## Features
+# Zombie Bunker Escape
 
-- **Text-based exploration**  
-  - Navigate a network of bunker rooms using simple text commands.  
-  - Each area includes descriptive flavor text and unique interactions.
+Zombie Bunker Escape is a text-based survival horror game set in an underground bunker stalked by the Alpha Zombie. You move between rooms, grab key survival items, and decide when to risk entering the Control Room. Go in underprepared and the Alpha turns you into bunker décor.
 
-- **Inventory and items**  
-  - Pick up and use items such as keycards and notes.  
-  - Inventory is checked at key decision points to unlock or block progress.  
-
-- **Keycard and code-locked doors**  
-  - Certain paths and rooms remain inaccessible until you find the correct keycard or discover the required access code.  
-  - Encourages exploration and backtracking when new items are found.
-
-- **Terminal interactions**  
-  - Access in-game terminals to read logs, uncover story details, and retrieve useful clues like door codes.  
-  - Terminals add world-building and light puzzle elements.
-
-- **Branching outcomes and fail states**  
-  - Multiple ways to lose (e.g., poor choices, entering unsafe areas unprepared, ignoring clues).  
-  - Emphasis on learning from previous runs and making better decisions.
-
-- **Structured game loop**  
-  - Clear separation between input handling, game state updates, and output to the player.  
-  - Logic organized into functions for rooms, actions, and checks, making the code easier to follow and extend.
+The game now runs both in the terminal and in a browser via a small Flask backend and a simple HTML/JS UI.
 
 ***
 
-## Installation
+## Story & Objective
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/<your-username>/zombie-bunker-escape.git
-   cd zombie-bunker-escape
-   ```
+Rotting hands scrape against the steel overhead as the city dies above you. You’re trapped in a sealed bunker with one goal: survive long enough to escape.
 
-2. **Ensure Python is installed**  
-   - Requires Python 3.x  
-   - Check your version with:
-     ```bash
-     python --version
-     ```
-     or
-     ```bash
-     python3 --version
-     ```
-
-3. **(Optional) Create a virtual environment**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate      # macOS/Linux
-   venv\Scripts\activate         # Windows
-   ```
-
-There are no external dependencies; the game uses only the Python standard library.
+- Explore rooms like the Armory, Med Bay, Storage Bay, Generator Room, Lab, Observation Post, and Control Room.
+- Collect **6 survival items**: Shotgun, Ammo, Med Kit, Hazmat Suit, Generator Fuse, Key Card.
+- Only enter the **Control Room** when you’re ready. The Alpha Zombie is waiting, and your inventory determines whether you:
+  - Die choking on spores.
+  - Get ripped apart unarmed.
+  - Win, but bleed out anyway.
+  - Or actually walk out alive.
 
 ***
 
-## How to Play
+## How the Game Works
 
-1. **Run the game**
-   ```bash
-   python ZombieBunkerEscape.py
-   ```
-   or
-   ```bash
-   python3 ZombieBunkerEscape.py
-   ```
+### Movement
 
-2. **Read the opening description**  
-   - The game introduces the scenario and your initial location in the bunker.  
-   - Pay attention to details; hints for codes and safe routes may appear in the text.
+- Commands:
+  - `go North`
+  - `go South`
+  - `go East`
+  - `go West`
+- Room connections:
+  - Central Hub connects to Armory, Observation Post, Lab, and Storage Bay.
+  - Other rooms branch logically from there.
+- Certain exits are locked behind items (for example, the Control Room blast door needs the **Key Card**).
 
-3. **Enter commands**  
-   Typical commands (examples, adapt to your actual implementation):
-   - Movement: `go north`, `go south`, `go east`, `go west`
-   - Interactions: `inspect`, `use terminal`, `read note`
-   - Inventory: `inventory`, `use keycard`, `use <item>`
-   - Context-specific actions: prompted by the game in certain rooms
+### Items
 
-4. **Survive and escape**  
-   - Explore rooms, collect items, and unlock restricted areas.  
-   - Use terminals, notes, and environmental descriptions to deduce door codes and safe paths.  
-   - Make careful choices; rushing into the wrong room or ignoring clues can end the run.
+- Command: `get <item name>`
+  - Example: `get Shotgun`, `get Med Kit`, `get Hazmat Suit`
+- Each room may contain one item. Once you pick it up, it’s removed from the room.
+- Your inventory directly changes how the final encounter plays out.
 
-***
+### Chaining Commands
 
-## Code Structure
+You can chain up to **two** commands in one line using `and`:
 
-- **`ZombieBunkerEscape.py`**  
-  Contains:
-  - Main game loop  
-  - Room functions / handlers  
-  - Inventory management logic  
-  - Decision branches and fail states  
-  - Utility functions for printing text and processing input
+- `go North and get Shotgun`
+- `get Med Kit and go South`
 
-Key design ideas:
-- **Modular functions** for rooms and events to keep logic localized.
-- **Centralized state** (player location, inventory, flags) passed or referenced by these functions.
-- **Clear separation** between narrative text and game logic, making it easier to tweak story elements or refactor logic later.
+The game processes them in order and still checks for game over after each step.
 
 ***
 
-## Future Improvements
+## Game Logic (Python Side)
 
-Planned and potential enhancements:
+All the bunker logic lives in `ZombieBunkerEscape.py`:
 
-### Gameplay and Mechanics
-- **More complex puzzles**
-  - Multi-step puzzles requiring combining clues from different rooms.  
-  - Timed sequences where you must complete actions within a limited number of moves.
+- **World setup**
+  - `build_world()` defines all rooms, exits, and which item (if any) lives in each room.
+- **Status + feedback**
+  - `render_status(...)` returns a status block with:
+    - Current room, inventory, visible item in the room, and available exits.
+- **Commands**
+  - `handle_go(...)` handles movement and Control Room access checks (Key Card gating).
+  - `handle_get(...)` handles item pickup and inventory updates.
+  - `check_game_over(...)` handles the Alpha Zombie encounter logic and all endings.
+- **Engine wrapper**
+  - `ZombieBunkerEscapeGame`:
+    - `start()` returns the intro plus initial status.
+    - `process_command(text)` takes raw player input and returns all resulting text (including chained commands and endings).
+  - `main()` still lets you play from the terminal using `input()`.
 
-- **Enhanced inventory system**
-  - Item descriptions and examination (`inspect <item>`).  
-  - Consumable items (medkits, temporary buffs, etc.).
-
-- **Multiple endings**
-  - Different escape outcomes based on choices, items collected, or routes taken.  
-  - “Bad”, “neutral”, and “good” endings that encourage replayability.
-
-### World and Narrative
-- **Expanded bunker layout**
-  - Additional rooms and sectors (labs, armory, ventilation shafts, maintenance levels).  
-  - Optional side areas with lore and extra rewards.
-
-- **Deeper story integration**
-  - More logs, notes, and terminal messages that reveal what happened in the facility.  
-  - Branching narrative nodes that reflect major player decisions.
-
-### Technical Enhancements
-- **Better input parsing**
-  - More flexible command handling (e.g., supporting synonyms, ignoring minor typos).  
-  - Command help system (`help` / `commands`) that lists available actions.
-
-- **Refactored architecture**
-  - Move room definitions and data to JSON/YAML or Python data structures for easier content editing.  
-  - Introduce a small engine-like framework for reusable text-based games.
-
-- **Save/load system**
-  - Ability to save progress to a file and resume later.  
-  - Multiple save slots or checkpoints at key story beats.
-
-### Quality of Life
-- **Configurable difficulty**
-  - Easy/normal/hard modes affecting available hints, number of safe mistakes, or visibility of clues.  
-
-- **Improved text UX**
-  - Optional “slow type” effect toggle.  
-  - Clearer formatting for important clues and item names.
+The idea: the engine is one place, and the UI (terminal or browser) just feeds strings in and prints strings out.
 
 ***
 
-## Contributing
+## Running in the Terminal
 
-Contributions, suggestions, and bug reports are welcome.  
-Possible ways to help:
+From the project directory:
 
-- Report bugs or confusing sections of the game.
-- Propose or implement new rooms, puzzles, and endings.
-- Refactor parts of the codebase for clarity, modularity, or testability.
+```bash
+python ZombieBunkerEscape.py
+```
+
+Then follow the prompts:
+
+- Example commands:
+  - `go North`
+  - `get Key Card`
+  - `go South and get Ammo`
+
+The game describes your surroundings, tracks your inventory, and eventually pushes you into the final encounter if you enter the Control Room.
+
+***
+
+## Running in the Browser (Local)
+
+The browser version uses Flask to expose a tiny JSON API and a static HTML/CSS front end.
+
+### Requirements
+
+- Python 3.x
+- Flask installed
+
+Install Flask:
+
+```bash
+python -m pip install flask
+```
+
+### Project Layout
+
+Make sure your folder looks like this:
+
+```text
+Zombie-Bunker-Escape/
+  app.py
+  ZombieBunkerEscape.py
+  templates/
+    index.html
+  static/
+    style.css
+```
+
+### Start the server
+
+From the project root:
+
+```bash
+python app.py
+```
+
+You should see something like:
+
+```text
+ * Running on http://127.0.0.1:5000
+```
+
+### Play in the browser
+
+Open:
+
+```text
+http://127.0.0.1:5000/
+```
+
+The page shows:
+
+- A scrolling **output** area with all story text and status updates.
+- A **command input** box where you type `go North`, `get Med Kit`, etc.
+- A **Send** button (or just hit Enter).
+
+Under the hood:
+
+- The front end calls `POST /api/game/start` once to get the intro and initial status.
+- Each command sends `POST /api/game` with your input and session id.
+- The backend uses `ZombieBunkerEscapeGame` to process the command and returns the new block of text.
+
+***
+
+## Future Stuff
+
+Some ideas you can layer on later:
+
+- Add a visible **log panel** for inventory and last few moves.
+- Add simple **animations** or color highlights for damage, key events, or endings.
+- Add basic **audio cues** (alarm hum, shotgun blast) via the browser.
+- Move from in-memory sessions to something persistent if you ever deploy this publicly.
 
 ***
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+This project is licensed under the **MIT License**.
