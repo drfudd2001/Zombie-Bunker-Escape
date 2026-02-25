@@ -1,6 +1,3 @@
-# Elmer Figueroa-Garcia
-
-
 def show_instructions():
     print("===== ZOMBIE BUNKER ESCAPE =====")
     print("Rotting hands scrape at the steel above as the city dies overhead.")
@@ -271,4 +268,5 @@ def main():
 
 
 if __name__ == "__main__":
+
     main()
